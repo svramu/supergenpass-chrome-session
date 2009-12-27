@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> 
+<html lang="en"> 
+  <head>
+    <title>SuperChromePass</title>
+    <style type="text/css">
+      body{overflow:visible; width:170px;}
+      *{margin:0 auto; padding:0; font-family:sans-serif; font-size:11px;}
+      div{text-align:center; padding:2px;}
+      h1,h3 {padding:2px;}
+      input[type=password]{padding:2px; border:black solid 1px;}
+    </style>
+    <script type="text/javascript">
+      var bg = chrome.extension.getBackgroundPage();
+
+      function isHidden(id) {return document.getElementById(id).style.display=="none";}
+      function setDisplay(id, value) {document.getElementById(id).style.display = value;}
+      function hide(id) {setDisplay(id, "none");}
+      function show(id) {setDisplay(id, "block");}
+
+      function setup() {
+        if(bg.masterpass == null) {
+          hide("reset");
+          show("input");
+          document.getElementById("pass").focus();
+        } else {
+          hide("input");
+          show("reset");
+        }
+        return false;
+      }
+
+      function reset() {
+        bg.masterpass = null;
+        setup();
+        return false;
+      }
+
+      function save() {
+        var pass = document.getElementById('pass').value;
+        if(pass.length==0) return;
+        bg.masterpass = pass;
+        document.getElementById('pass').value = "";
+        setup();
+        bg.update();
+        return false;
+      }
+
+      function saveOnEnter(event) {
+        if (event.keyCode == 13) save();
+      }
+    </script>
+  </head> 
+  <body onload="setup();">
+    <div>
+      <h1>SuperGenPass Chrome Session</h1>
+      <br />
+      <div id="input">
+        <h3>Enter Master Password</h3>
+        <input type="password" id="pass" onkeydown="return saveOnEnter(event);" /><br />
+        <br />
+        <input type="submit" value="Save" id="save" onclick="save();" /><br />
+      </div>
+      <input type="submit" value="Reset" id="reset" onclick="reset();" /><br />
+    </div>
+  </body>
+</html>

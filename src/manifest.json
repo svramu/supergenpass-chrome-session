@@ -1,0 +1,23 @@
+{
+  "name": "SuperGenPass Chrome Session",
+  "description": "This extension adds SuperGenPass like capabilities for a chrome session",
+  "version": "1.1.1",
+  "permissions": [
+    "tabs", "http://*/*", "https://*/*"
+   ],
+  "browser_action": {
+    "default_title": "SuperGenPass Chrome Session",
+    "default_icon": "icon_128.png",
+    "popup": "popup.html"
+  },
+  "background_page": "background.html",
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["password.js"]
+    }
+  ],
+  "icons": {
+    "128": "icon_128.png"
+  }
+}

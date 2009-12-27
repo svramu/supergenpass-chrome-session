@@ -1,0 +1,23 @@
+<script type="text/javascript" src="md5.js"></script>
+<script type="text/javascript" src="sgp2.js"></script>
+<script type="text/javascript">
+  var masterpass = null;
+
+  function applyPassword(tabId, domain) {
+    if(masterpass==null) return;
+  	var pass = gp2_generate_passwd(masterpass+':'+gp2_process_uri(domain, false),10);
+    chrome.tabs.sendRequest(tabId, {value:pass});
+  }
+
+  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    if(masterpass==null || changeInfo.status=="loading") return;
+    applyPassword(tab.id, tab.url);
+  });
+
+  function update() {
+    if(masterpass==null) return;
+    chrome.tabs.getSelected(null, function(tab) {
+      applyPassword(tab.id, tab.url);
+    });
+  }
+</script>
