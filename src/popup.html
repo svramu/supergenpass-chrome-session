@@ -6,8 +6,11 @@
       body{overflow:visible; width:170px;}
       *{margin:0 auto; padding:0; font-family:sans-serif; font-size:11px;}
       div{text-align:center; padding:2px;}
+      table{border-collapse:collapse;}
+      td{border-bottom:#ccc solid 1px; color:#ccc; padding:2px;}
+      td:hover{color:blue; cursor:pointer;}
       h1,h3 {padding:2px;}
-      input[type=password]{padding:2px; border:black solid 1px;}
+      input[type=password]{padding:2px; border:#ccc solid 1px;}
     </style>
     <script type="text/javascript">
       var bg = chrome.extension.getBackgroundPage();
@@ -17,31 +20,55 @@
       function hide(id) {setDisplay(id, "none");}
       function show(id) {setDisplay(id, "block");}
 
-      function setup() {
-        if(bg.masterpass == null) {
-          hide("reset");
-          show("input");
-          document.getElementById("pass").focus();
-        } else {
-          hide("input");
-          show("reset");
+      function clearTable(tbody) {
+        while (tbody.rows.length> 0) {
+          tbody.deleteRow(0);
         }
+      }
+      
+      function createPassRow(tbody, index, pass) {
+        var row = tbody.insertRow(tbody.rows.length);
+    	
+        var cell = row.insertCell();
+        cell.innerHTML = index;
+        row.appendChild(cell);
+        
+        cell = row.insertCell();
+        cell.innerHTML = pass;
+        cell.title = "Apply this password now.";
+        cell.onclick = function() {
+          bg.updateStored(index);
+          window.close();
+        }
+        row.appendChild(cell);
+      }
+      
+      function setup() {
+        var tbody = document.getElementById('table').tBodies[0];
+        clearTable(tbody);
+
+        for (var i = 0; i < bg.maskedPasswords.length; i++) {
+          createPassRow(tbody, i, bg.maskedPasswords[i]);
+        }
+        
+        document.getElementById("pass").focus();
         return false;
       }
 
       function reset() {
-        bg.masterpass = null;
+        bg.reset();
         setup();
+        window.close();
         return false;
       }
 
       function save() {
         var pass = document.getElementById('pass').value;
         if(pass.length==0) return;
-        bg.masterpass = pass;
+        bg.update(pass);
         document.getElementById('pass').value = "";
         setup();
-        bg.update();
+        window.close();
         return false;
       }
 
@@ -52,15 +79,17 @@
   </head> 
   <body onload="setup();">
     <div>
-      <h1>SuperGenPass Chrome Session</h1>
+      <h1>SuperGenPass Chrome Session (1.1.2)</h1>
+      <br />
+      <table border="0" cellspacing="0" cellpadding="0" width="90%" id="table"><tr><td></td></tr></table>
       <br />
       <div id="input">
-        <h3>Enter Master Password</h3>
+        <h3>New Master Password</h3>
         <input type="password" id="pass" onkeydown="return saveOnEnter(event);" /><br />
         <br />
-        <input type="submit" value="Save" id="save" onclick="save();" /><br />
+        <input type="submit" value="Save" id="save" onclick="save();" />
+        <input type="submit" value="Reset" id="reset" onclick="reset();" />
       </div>
-      <input type="submit" value="Reset" id="reset" onclick="reset();" /><br />
     </div>
   </body>
 </html>

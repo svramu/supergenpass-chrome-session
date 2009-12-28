@@ -9,10 +9,10 @@ function processPasswordFields(pass) {
     for (i=0; i<form.length; ++i) {
       if (form[i].type.toLowerCase() == 'password') {
         if(pass==null) {
-					form[i].style.backgroundImage = fieldFoundData;
+			form[i].style.backgroundImage = fieldFoundData;
         } else {
-					form[i].style.backgroundImage = fieldPopData;
-          form[i].value = pass;
+			form[i].style.backgroundImage = fieldPopData;
+			form[i].value = pass;
         }
         form[i].style.backgroundPosition='top right';
         form[i].style.backgroundRepeat='no-repeat';

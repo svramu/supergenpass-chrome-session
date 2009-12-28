@@ -1,24 +1,39 @@
 <script type="text/javascript" src="md5.js"></script>
 <script type="text/javascript" src="sgp2.js"></script>
 <script type="text/javascript">
-  var masterpass = null;
+  var passwords = [];
+  var maskedPasswords = [];
 
-  function applyPassword(tabId, domain) {
-    if(masterpass==null) return;
-  	var pass = gp2_generate_passwd(masterpass+':'+gp2_process_uri(domain, false),10);
+  function reset() {
+    passwords = [];
+    maskedPasswords = [];
+    updateStored(-1);
+  }
+
+  function applyPassword(tabId, domain, index) {
+    var pass = "";
+    if(index < passwords.length && index >= 0) {
+      pass = gp2_generate_passwd(passwords[index]+':'+gp2_process_uri(domain, false),10);
+    }
     chrome.tabs.sendRequest(tabId, {value:pass});
   }
 
   chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if(masterpass==null || changeInfo.status=="loading") return;
-    applyPassword(tab.id, tab.url);
+    if(passwords.length==0 || changeInfo.status=="loading") return;
+    applyPassword(tab.id, tab.url, 0);
   });
 
-  function update() {
-    if(masterpass==null) return;
+  function updateStored(index) {
     chrome.tabs.getSelected(null, function(tab) {
-      applyPassword(tab.id, tab.url);
+      applyPassword(tab.id, tab.url, index);
     });
+  }
+
+  function update(pass) {
+    var index = passwords.length;
+    passwords[index] = pass;
+    maskedPasswords[index] = gp2_generate_passwd(pass,10);
+    updateStored(index);
   }
 </script>
 
