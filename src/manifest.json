@@ -1,7 +1,7 @@
 {
-  "name": "SuperGenPass Chrome Session 1.1.2",
+  "name": "SuperGenPass Chrome Session 1.2",
   "description": "This extension adds SuperGenPass like capabilities for a chrome session",
-  "version": "1.1.2",
+  "version": "1.2",
   "permissions": [
     "tabs", "http://*/*", "https://*/*"
    ],

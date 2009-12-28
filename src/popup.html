@@ -7,7 +7,7 @@
       *{margin:0 auto; padding:0; font-family:sans-serif; font-size:11px;}
       div{text-align:center; padding:2px;}
       table{border-collapse:collapse;}
-      td{border-bottom:#ccc solid 1px; color:#ccc; padding:2px;}
+      td{border-bottom:#ccc solid 1px; color:#666; padding:2px;}
       td:hover{color:blue; cursor:pointer;}
       h1,h3 {padding:2px;}
       input[type=password]{padding:2px; border:#ccc solid 1px;}
@@ -55,9 +55,26 @@
         return false;
       }
 
+      function show() {
+        var pass = document.getElementById('pass').value;
+        if(pass.length==0) return;
+        chrome.tabs.getSelected(null, function(tab) {
+          bg.alertbg(bg.generate(pass, tab.url));
+        });
+        window.close();
+        return false;
+      }
+
       function reset() {
-        bg.reset();
-        setup();
+        var count = bg.passwords.length;
+        if(count==0) return;
+        //NOTE: confirm popup always return false when called locally.
+        //ISSUE: But now the popup closes before the confirm dialog does, and requires two click now.
+        if(bg.confirmbg("This will remove all ("+count+") stored passwords"
+            + "\nfrom the session memory. Continue?")) {
+          bg.reset();
+          setup();
+        }
         window.close();
         return false;
       }
@@ -79,7 +96,7 @@
   </head> 
   <body onload="setup();">
     <div>
-      <h1>SuperGenPass Chrome Session (1.1.2)</h1>
+      <h1>SuperGenPass Chrome Session (1.2)</h1>
       <br />
       <table border="0" cellspacing="0" cellpadding="0" width="90%" id="table"><tr><td></td></tr></table>
       <br />
@@ -87,8 +104,9 @@
         <h3>New Master Password</h3>
         <input type="password" id="pass" onkeydown="return saveOnEnter(event);" /><br />
         <br />
-        <input type="submit" value="Save" id="save" onclick="save();" />
-        <input type="submit" value="Reset" id="reset" onclick="reset();" />
+        <input type="submit" value="Save" title="Save it for the session (Enter key)" id="save" onclick="save();" />
+        <input type="submit" value="Reset" title="Removes all stored passwords" id="reset" onclick="reset();" />
+        <input type="submit" value="Show" title="Just show for copying (not stored)." id="show" onclick="show();" />
       </div>
     </div>
   </body>

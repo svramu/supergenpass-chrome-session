@@ -4,17 +4,26 @@
   var passwords = [];
   var maskedPasswords = [];
 
+  function alertbg(msg) {
+    alert(msg);
+  }
+  function confirmbg(msg) {
+    return confirm(msg);
+  }
+
   function reset() {
     passwords = [];
     maskedPasswords = [];
     updateStored(-1);
   }
 
+  function generate(pass, domain) {
+    return gp2_generate_passwd(pass+':'+gp2_process_uri(domain, false),10);
+  }
+
   function applyPassword(tabId, domain, index) {
     var pass = "";
-    if(index < passwords.length && index >= 0) {
-      pass = gp2_generate_passwd(passwords[index]+':'+gp2_process_uri(domain, false),10);
-    }
+    if(index < passwords.length && index >= 0) pass = generate(passwords[index], domain);
     chrome.tabs.sendRequest(tabId, {value:pass});
   }
 
