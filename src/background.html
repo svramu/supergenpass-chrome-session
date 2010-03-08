@@ -1,8 +1,9 @@
 <script type="text/javascript" src="md5.js"></script>
 <script type="text/javascript" src="sgp2.js"></script>
 <script type="text/javascript">
-  var passwords = [];
-  var maskedPasswords = [];
+  var blacklist = []; 
+  var passwords = []; // {id:, master:, mask:}
+  var tabs = []; // {id:, domain:, passId:, disabled:}
 
   function alertbg(msg) {
     alert(msg);
@@ -10,39 +11,88 @@
   function confirmbg(msg) {
     return confirm(msg);
   }
+  function promptbg(msg, defaultValue) {
+    return prompt(msg, defaultValue);
+  }
 
   function reset() {
     passwords = [];
-    maskedPasswords = [];
+    tabs = [];
     updateStored(-1);
+  }
+
+  function domain(url) {
+    return gp2_process_uri(url, false);
   }
 
   function generate(pass, domain) {
     return gp2_generate_passwd(pass+':'+gp2_process_uri(domain, false),10);
   }
 
-  function applyPassword(tabId, domain, index) {
-    var pass = "";
-    if(index < passwords.length && index >= 0) pass = generate(passwords[index], domain);
-    chrome.tabs.sendRequest(tabId, {value:pass});
+  function applyPassword(tab) {
+    if(passwords.length==0) return;
+    var pass = generate(passwords[tab.passId].master, tab.domain);
+    chrome.tabs.sendRequest(tab.id, {value:pass});
+    //alert(tab.domain+" - "+passwords[tab.passId].mask+" - "+pass);
   }
 
+  chrome.tabs.onRemoved.addListener(function(tabId) {
+    delete tabs[tabId];
+  });
+
   chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if(passwords.length==0 || changeInfo.status=="loading") return;
-    applyPassword(tab.id, tab.url, 0);
+    if(changeInfo.status!="complete") return;
+    tabs[tab.id] = {
+      id: tab.id,
+      domain : gp2_process_uri(tab.url, false),
+      passId : 0,
+      disabled: false
+    };
+    if(localStorage["fill_on_pageload_off"] || isInBlacklist(tab.url)) return;
+    applyPassword(tabs[tab.id]);
   });
 
   function updateStored(index) {
     chrome.tabs.getSelected(null, function(tab) {
-      applyPassword(tab.id, tab.url, index);
+      tabs[tab.id].passId = index;
+      applyPassword(tabs[tab.id]);
     });
   }
 
   function update(pass) {
     var index = passwords.length;
-    passwords[index] = pass;
-    maskedPasswords[index] = gp2_generate_passwd(pass,10);
+    passwords[index] = {
+      id : index,
+      master : pass,
+      mask: gp2_generate_passwd(pass,10)
+    };
     updateStored(index);
   }
+
+  function loadBlacklist() {
+    if (!window.localStorage["domain_blacklist"]) {
+      blacklist = new Object;
+    } else {
+      blacklist = JSON.parse(window.localStorage["domain_blacklist"])
+    }
+  }
+
+  function addToBlacklist(location) {
+    var domain = gp2_process_uri(location);
+    blacklist[domain] = true;
+    localStorage["domain_blacklist"] = JSON.stringify(blacklist);
+  }
+
+  function removeFromBlacklist(location) {
+    var domain = gp2_process_uri(location);
+    delete blacklist[domain];
+    localStorage["domain_blacklist"] = JSON.stringify(blacklist);
+  }
+
+  function isInBlacklist(location) {
+    return (blacklist[gp2_process_uri(location)]);
+  }
+
+  loadBlacklist();
 </script>
 

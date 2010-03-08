@@ -9,14 +9,17 @@
       table{border-collapse:collapse;}
       td{border-bottom:#ccc solid 1px; color:#666; padding:2px;}
       td:hover{color:blue; cursor:pointer;}
+      .clickable{color:blue; cursor:pointer;}
       h1,h3 {padding:2px;}
       input[type=password]{padding:2px; border:#ccc solid 1px;}
     </style>
+<!----------------------------------------------------------------------------->
     <script type="text/javascript">
       var bg = chrome.extension.getBackgroundPage();
 
-      function isHidden(id) {return document.getElementById(id).style.display=="none";}
-      function setDisplay(id, value) {document.getElementById(id).style.display = value;}
+      function $(id) {return document.getElementById(id);}
+      function isHidden(id) {return $(id).style.display=="none";}
+      function setDisplay(id, value) {$(id).style.display = value;}
       function hide(id) {setDisplay(id, "none");}
       function show(id) {setDisplay(id, "block");}
 
@@ -28,36 +31,76 @@
       
       function createPassRow(tbody, index, pass) {
         var row = tbody.insertRow(tbody.rows.length);
-    	
-        var cell = row.insertCell();
-        cell.innerHTML = index;
-        row.appendChild(cell);
-        
-        cell = row.insertCell();
-        cell.innerHTML = pass;
-        cell.title = "Apply this password now.";
-        cell.onclick = function() {
+        function addCell(html, title, onclick) {
+          var cell = row.insertCell();
+          cell.innerHTML = html;
+          cell.title = title;
+          cell.onclick = onclick;
+          row.appendChild(cell);
+        }
+        addCell(index, null, null);
+        addCell(pass, "Apply this password now.", function(){
           bg.updateStored(index);
           window.close();
-        }
-        row.appendChild(cell);
+        });
+        addCell("<img src='show.png' alt='Show' />", "Show this Password.", function(){
+          chrome.tabs.getSelected(null, function(tab) {
+            window.close();
+            var domain = bg.tabs[tab.id].domain;
+            bg.alertbg(bg.generate(bg.passwords[index].master, domain));
+          });
+        });
       }
       
       function setup() {
-        var tbody = document.getElementById('table').tBodies[0];
+        var domain = $('domain');
+        chrome.tabs.getSelected(null, function(tab) {
+          var bgtab = bg.tabs[tab.id];
+          domain.innerHTML = bgtab.domain;
+          domain.title = "Click to change the domain.";
+          domain.onclick = function() {
+            window.close();
+            var newDomain = bg.promptbg("Change domain:", bgtab.domain);
+            bgtab.domain = newDomain;
+            bg.applyPassword(bgtab);
+          };
+        });
+
+        var tbody = $('table').tBodies[0];
         clearTable(tbody);
 
-        for (var i = 0; i < bg.maskedPasswords.length; i++) {
-          createPassRow(tbody, i, bg.maskedPasswords[i]);
+        for (var i = 0; i < bg.passwords.length; i++) {
+          createPassRow(tbody, i, bg.passwords[i].mask);
         }
         
-        document.getElementById("pass").focus();
+        $("pass").focus();
+        
+        var backlist = $("blacklist");
+        domain.style.color = "green";
+
+        chrome.tabs.getSelected(null, function(tab) {
+          if (bg.isInBlacklist(tab.url)) {
+            backlist.value = "Enable";
+            backlist.title = "Auto-fill password on current domain";
+            backlist.onclick = enable;
+            domain.style.color = "red";
+          }
+          var passId = bg.tabs[tab.id].passId;
+          if(passId >= 0 && passId < tbody.rows.length) {
+            tbody.rows[passId].cells[1].style.background = "yellow";
+          }
+        });
         return false;
       }
 
+//-----------------------------------------------------------------------------//
+
+      function saveOnEnter(event) {
+        if (event.keyCode == 13) save();
+      }
+
       function show() {
-        var pass = document.getElementById('pass').value;
-        if(pass.length==0) return;
+        if($('pass').value.length==0) return;
         chrome.tabs.getSelected(null, function(tab) {
           bg.alertbg(bg.generate(pass, tab.url));
         });
@@ -70,39 +113,62 @@
         if(count==0) return;
         //NOTE: confirm popup always return false when called locally.
         //ISSUE: But now the popup closes before the confirm dialog does, and requires two click now.
-        if(bg.confirmbg("This will remove all ("+count+") stored passwords"
-            + "\nfrom the session memory. Continue?")) {
-          bg.reset();
-          setup();
-        }
         window.close();
+        if(bg.confirmbg("This will remove all ("+count+") stored passwords"
+          + "\nfrom the session memory. Continue?")) {
+          bg.reset();
+        }
         return false;
       }
 
       function save() {
-        var pass = document.getElementById('pass').value;
+        var pass = $('pass').value;
         if(pass.length==0) return;
         bg.update(pass);
-        document.getElementById('pass').value = "";
+        $('pass').value = "";
         setup();
-        window.close();
         return false;
       }
 
-      function saveOnEnter(event) {
-        if (event.keyCode == 13) save();
+      function disable() {
+        chrome.tabs.getSelected(null, function(tab) {
+          bg.addToBlacklist(tab.url);
+        });
+        window.close();
+        bg.alertbg($('domain').innerHTML+" Disabled!"
+          + "\nIn future, passwords for this domain will not be auto filled."
+          + "\nTo revert back 'Enable' it, or configure it in extension options.");
+        return false;
+      }
+
+      function enable() {
+        chrome.tabs.getSelected(null, function(tab) {
+          bg.removeFromBlacklist(tab.url);
+          var bgtab = bg.tabs[tab.id];
+          bg.applyPassword(bgtab);
+        });
+        window.close();
+        return false;
       }
     </script>
-  </head> 
+  </head>
+<!----------------------------------------------------------------------------->
   <body onload="setup();">
     <div>
-      <h1>SuperGenPass Chrome Session (1.2)</h1>
+      <h1>SuperGenPass Chrome Session (2.0)</h1>
+      <br />
+      <input type="submit" value="Disable" title="Don't auto-fill password on current domain" id="blacklist" onclick="disable();" />
+      <br />
+      <br />
+      <span id="domain" class="clickable" ></span>
+      <br />
       <br />
       <table border="0" cellspacing="0" cellpadding="0" width="90%" id="table"><tr><td></td></tr></table>
       <br />
       <div id="input">
         <h3>New Master Password</h3>
-        <input type="password" id="pass" onkeydown="return saveOnEnter(event);" /><br />
+        <input type="password" id="pass" onkeydown="return saveOnEnter(event);" />
+        <br />
         <br />
         <input type="submit" value="Save" title="Save it for the session (Enter key)" id="save" onclick="save();" />
         <input type="submit" value="Reset" title="Removes all stored passwords" id="reset" onclick="reset();" />
@@ -111,4 +177,4 @@
     </div>
   </body>
 </html>
-
+<!----------------------------------------------------------------------------->
