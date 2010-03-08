@@ -1,0 +1,59 @@
+<html>
+  <head>
+    <title>SuperGenPass Chrome Session Options</title>
+    <script type="text/javascript">
+
+      // Saves options to localStorage.
+      function save_options() {
+        var checkbox = document.getElementById("fill_on_pageload");
+        var fill_on_pageload = checkbox.checked;
+        // negate the UI setting so blank/undefined is the default,
+        // while keeping boolean & UI sanity
+        localStorage["fill_on_pageload_off"] = fill_on_pageload ? "" : 1;
+
+        var blacklist = new Object;
+        var domains = document.getElementById("blacklist").value.split(/\s+/)
+        for (i = 0; i < domains.length; i++) {
+          if (domains[i] != "")
+            blacklist[domains[i]] = true;
+        }
+        localStorage["domain_blacklist"] = JSON.stringify(blacklist);
+
+        // Update status to let user know options were saved.
+        var status = document.getElementById("status");
+        status.innerHTML = "Options Saved.";
+        setTimeout(function() {
+          status.innerHTML = "";
+        }, 750);
+      }
+
+      // Restores select box state to saved value from localStorage.
+      function restore_options() {
+        var fill_on_pageload = !localStorage["fill_on_pageload_off"]
+        document.getElementById("fill_on_pageload").checked = fill_on_pageload;
+
+        var blacklist;
+        if (!window.localStorage["domain_blacklist"]) {
+          blacklist = new Object;
+        } else {
+          blacklist = JSON.parse(window.localStorage["domain_blacklist"])
+        }
+        for (domain in blacklist) {
+          document.getElementById("blacklist").value += domain + "\n";
+        }
+      }
+    </script>
+  </head>
+
+  <body onload=restore_options()>
+    <input type="checkbox" id="fill_on_pageload" value="1"/><label
+      for="fill_on_pageload">Fill out first saved
+	    password automatically on page load</label><br />
+    <br />
+    Domain blacklist:<br />
+    <textarea cols="50" rows="4" id="blacklist"></textarea><br />
+    <br />
+    <button onclick="save_options()">Save</button><br />
+    <div id="status"></div>
+  </body>
+</html>

@@ -1,0 +1,179 @@
+diff -r 95ce8ec8c407 -r 3a23498de245 src/background.html
+--- a/src/background.html	Mon Dec 28 15:32:23 2009 +0530
++++ b/src/background.html	Sun Feb 21 17:18:56 2010 -0500
+@@ -3,6 +3,7 @@
+ <script type="text/javascript">
+   var passwords = [];
+   var maskedPasswords = [];
++  var blacklist = new Object;
+ 
+   function alertbg(msg) {
+     alert(msg);
+@@ -28,7 +29,10 @@
+   }
+ 
+   chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+-    if(passwords.length==0 || changeInfo.status=="loading") return;
++    if(passwords.length==0 || changeInfo.status=="loading" ||
++	    localStorage["fill_on_pageload_off"] || isInBlacklist(tab.url)) {
++      return;
++    }
+     applyPassword(tab.id, tab.url, 0);
+   });
+ 
+@@ -44,5 +48,31 @@
+     maskedPasswords[index] = gp2_generate_passwd(pass,10);
+     updateStored(index);
+   }
++
++  function loadBlacklist() {
++    if (!window.localStorage["domain_blacklist"]) {
++      blacklist = new Object;
++    } else {
++      blacklist = JSON.parse(window.localStorage["domain_blacklist"])
++    }
++  }
++
++  function addToBlacklist(location) {
++    var domain = gp2_process_uri(location);
++    blacklist[domain] = true;
++    localStorage["domain_blacklist"] = JSON.stringify(blacklist);
++  }
++
++  function removeFromBlacklist(location) {
++    var domain = gp2_process_uri(location);
++    delete blacklist[domain];
++    localStorage["domain_blacklist"] = JSON.stringify(blacklist);
++  }
++
++  function isInBlacklist(location) {
++    return (blacklist[gp2_process_uri(location)]);
++  }
++
++  loadBlacklist();
+ </script>
+ 
+diff -r 95ce8ec8c407 -r 3a23498de245 src/manifest.json
+--- a/src/manifest.json	Mon Dec 28 15:32:23 2009 +0530
++++ b/src/manifest.json	Sun Feb 21 17:18:56 2010 -0500
+@@ -19,5 +19,6 @@
+   ],
+   "icons": {
+     "128": "icon_128.png"
+-  }
++  },
++  "options_page": "options.html"
+ }
+diff -r 95ce8ec8c407 -r 3a23498de245 src/options.html
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/src/options.html	Sun Feb 21 17:18:56 2010 -0500
+@@ -0,0 +1,59 @@
++<html>
++    <head>
++	<title>SuperGenPass Chrome Session Options</title>
++    <script type="text/javascript">
++
++// Saves options to localStorage.
++function save_options() {
++  var checkbox = document.getElementById("fill_on_pageload");
++  var fill_on_pageload = checkbox.checked;
++  // negate the UI setting so blank/undefined is the default, 
++  // while keeping boolean & UI sanity
++  localStorage["fill_on_pageload_off"] = fill_on_pageload ? "" : 1;
++
++  var blacklist = new Object;
++  var domains = document.getElementById("blacklist").value.split(/\s+/)
++  for (i = 0; i < domains.length; i++) {
++    if (domains[i] != "")
++      blacklist[domains[i]] = true;
++  }
++  localStorage["domain_blacklist"] = JSON.stringify(blacklist);
++
++  // Update status to let user know options were saved.
++  var status = document.getElementById("status");
++  status.innerHTML = "Options Saved.";
++  setTimeout(function() {
++    status.innerHTML = "";
++  }, 750);
++}
++
++// Restores select box state to saved value from localStorage.
++function restore_options() {
++  var fill_on_pageload = !localStorage["fill_on_pageload_off"]
++  document.getElementById("fill_on_pageload").checked = fill_on_pageload;
++
++  var blacklist;
++  if (!window.localStorage["domain_blacklist"]) {
++    blacklist = new Object;
++  } else {
++    blacklist = JSON.parse(window.localStorage["domain_blacklist"])
++  }
++  for (domain in blacklist) {
++    document.getElementById("blacklist").value += domain + "\n";
++  }
++}
++    </script>
++    </head>
++
++    <body onload=restore_options()>
++	<input type="checkbox" id="fill_on_pageload" value="1"/><label
++	    for="fill_on_pageload">Fill out first saved
++	    password automatically on page load</label><br />
++	<br />
++        Domain blacklist:<br />
++        <textarea cols="50" rows="4" id="blacklist"></textarea><br />
++        <br />
++	<button onclick="save_options()">Save</button><br />
++	<div id="status"></div>
++  </body>
++</html>
+diff -r 95ce8ec8c407 -r 3a23498de245 src/popup.html
+--- a/src/popup.html	Mon Dec 28 15:32:23 2009 +0530
++++ b/src/popup.html	Sun Feb 21 17:18:56 2010 -0500
+@@ -52,6 +52,14 @@
+         }
+         
+         document.getElementById("pass").focus();
++
++        chrome.tabs.getSelected(null, function(tab) {
++          if (bg.isInBlacklist(tab.url)) {
++	    document.getElementById("blacklist").value = "Un-blacklist";
++	    document.getElementById("blacklist").title = "Auto-fill password on current site";
++	    document.getElementById("blacklist").onclick = unblacklist;
++	  }
++        });
+         return false;
+       }
+ 
+@@ -92,6 +100,22 @@
+       function saveOnEnter(event) {
+         if (event.keyCode == 13) save();
+       }
++
++      function blacklist() {
++        chrome.tabs.getSelected(null, function(tab) {
++          bg.addToBlacklist(tab.url);
++        });
++	window.close()
++        return false;
++      }
++
++      function unblacklist() {
++        chrome.tabs.getSelected(null, function(tab) {
++          bg.removeFromBlacklist(tab.url);
++        });
++	window.close()
++        return false;
++      }
+     </script>
+   </head> 
+   <body onload="setup();">
+@@ -107,6 +131,8 @@
+         <input type="submit" value="Save" title="Save it for the session (Enter key)" id="save" onclick="save();" />
+         <input type="submit" value="Reset" title="Removes all stored passwords" id="reset" onclick="reset();" />
+         <input type="submit" value="Show" title="Just show for copying (not stored)." id="show" onclick="show();" />
++	<br />
++	<input type="submit" value="Blacklist Site" title="Don't auto-fill password on current site" id="blacklist" onclick="blacklist();" />
+       </div>
+     </div>
+   </body>
