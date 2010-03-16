@@ -25,6 +25,20 @@
     return gp2_process_uri(url, false);
   }
 
+  function initTab(tab) {
+    return {
+      id: tab.id,
+      domain : gp2_process_uri(tab.url, false),
+      passId : 0,
+      disabled: false
+    };
+  }
+
+  function domainByTab(tab) {
+    if(tabs[tab.id] == null) tabs[tab.id] = initTab(tab);
+    return tabs[tab.id];
+  }
+
   function generate(pass, domain) {
     return gp2_generate_passwd(pass+':'+gp2_process_uri(domain, false),10);
   }
@@ -42,12 +56,7 @@
 
   chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if(changeInfo.status!="complete") return;
-    tabs[tab.id] = {
-      id: tab.id,
-      domain : gp2_process_uri(tab.url, false),
-      passId : 0,
-      disabled: false
-    };
+    tabs[tab.id] = initTab(tab);
     if(localStorage["fill_on_pageload_off"] || isInBlacklist(tab.url)) return;
     applyPassword(tabs[tab.id]);
   });
