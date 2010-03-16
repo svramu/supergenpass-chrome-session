@@ -9,11 +9,11 @@ SuperGenPass Chrome Session
 
 ----------
 
-Stores multiple SuperGenPass style master passwords for a chrome session.
+Store multiple SuperGenPass style master passwords for a chrome session.
 
 ----------
 
-This extension stores multiple SuperGenPass style master passwords for a chrome session. It can perform all important functions of the original SGP bookmarklet, in a secure way.
+Store multiple SuperGenPass style master passwords for a chrome session. Perform all important functions of the original SGP bookmarklet, in a secure way.
 
 2.0 - 20100316
 - View and edit the domain part used in each tab.
