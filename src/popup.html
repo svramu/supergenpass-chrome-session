@@ -10,6 +10,7 @@
       td{border-bottom:#ccc solid 1px; color:#666; padding:2px;}
       td:hover{color:blue; cursor:pointer;}
       .clickable{color:blue; cursor:pointer;}
+      img{cursor:pointer;}
       h1,h3 {padding:2px;}
       input[type=password]{padding:2px; border:#ccc solid 1px;}
     </style>
@@ -43,6 +44,8 @@
           bg.updateStored(index);
           window.close();
         });
+        /*
+         *CAUTION: A possible practical security hole?
         addCell("<img src='show.png' alt='Show' />", "Show this Password.", function(){
           chrome.tabs.getSelected(null, function(tab) {
             window.close();
@@ -50,12 +53,20 @@
             bg.alertbg(bg.generate(bg.passwords[index].master, domain));
           });
         });
+        */
       }
       
+      function disableActiveOnToggle() {
+        var activetoggle = $("activetoggle");
+        activetoggle.title = "Auto-fill password on current domain";
+        activetoggle.src = "yes.png";
+        activetoggle.onclick = enable;
+      }
+
       function setup() {
         var domain = $('domain');
         chrome.tabs.getSelected(null, function(tab) {
-          var bgtab = bg.tabs[tab.id];
+          var bgtab = bg.domainByTab(tab);
           domain.innerHTML = bgtab.domain;
           domain.title = "Click to change the domain.";
           domain.onclick = function() {
@@ -75,14 +86,11 @@
         
         $("pass").focus();
         
-        var backlist = $("blacklist");
         domain.style.color = "green";
 
         chrome.tabs.getSelected(null, function(tab) {
           if (bg.isInBlacklist(tab.url)) {
-            backlist.value = "Enable";
-            backlist.title = "Auto-fill password on current domain";
-            backlist.onclick = enable;
+            disableActiveOnToggle();
             domain.style.color = "red";
           }
           var passId = bg.tabs[tab.id].passId;
@@ -109,15 +117,13 @@
       }
 
       function reset() {
-        var count = bg.passwords.length;
-        if(count==0) return;
         //NOTE: confirm popup always return false when called locally.
         //ISSUE: But now the popup closes before the confirm dialog does, and requires two click now.
         window.close();
-        if(bg.confirmbg("This will remove all ("+count+") stored passwords"
-          + "\nfrom the session memory. Continue?")) {
-          bg.reset();
-        }
+        var count = bg.passwords.length;
+        if(count!=0 && !bg.confirmbg("This will remove all ("+count+") stored passwords"
+          + "\nfrom the session memory. Continue?")) return false;
+        bg.reset();
         return false;
       }
 
@@ -127,18 +133,19 @@
         bg.update(pass);
         $('pass').value = "";
         setup();
-        //window.close();
+        //NOTE: For now closing automatically, for the default case of one password
+        window.close();
         return false;
       }
 
       function disable() {
-        chrome.tabs.getSelected(null, function(tab) {
-          bg.addToBlacklist(tab.url);
-        });
         window.close();
-        bg.alertbg($('domain').innerHTML+" Disabled!"
-          + "\nIn future, passwords for this domain will not be auto filled."
-          + "\nTo revert back 'Enable' it, or configure it in extension options.");
+        chrome.tabs.getSelected(null, function(tab) {
+          if(bg.confirmbg("Disable this domain: "+$('domain').innerHTML+" ?"
+            + "\nIf disabled, then passwords will not be auto filled on load, for this domain.")) {
+            bg.addToBlacklist(tab.url);
+          }
+        });
         return false;
       }
 
@@ -158,10 +165,8 @@
     <div>
       <h1>SuperGenPass Chrome Session (2.0)</h1>
       <br />
-      <input type="submit" value="Disable" title="Don't auto-fill password on current domain" id="blacklist" onclick="disable();" />
-      <br />
-      <br />
-      <span id="domain" class="clickable" ></span>
+      <span id="domain" class="clickable" ></span>&nbsp;
+      <img id="activetoggle" src='no.png' title="Don't auto-fill password on current domain" onclick="disable();" alt='Active Toggle' />
       <br />
       <br />
       <table border="0" cellspacing="0" cellpadding="0" width="90%" id="table"><tr><td></td></tr></table>
