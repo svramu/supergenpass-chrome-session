@@ -17,7 +17,7 @@ This extension stores multiple SuperGenPass style master passwords for a chrome 
 
 2.0 - 20100316
 - View and edit the domain part used in each tab.
-- Minimal options page: Block or unblock a domain, or all, from auto-filling the password on page load.
+- Minimal options page: Block or unblock a domain, or all, from auto-filling the password on page load. (aripollak patch)
 - Last used password for each tab is highlighted.
 
 1.2 - 20091228
