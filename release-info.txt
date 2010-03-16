@@ -1,11 +1,11 @@
 ----------
 
-2.0 - 2010-03-16 IST
+2.0 - 20100316
 svramu
 
 ----------
 
-SuperGenPass Chrome Session 
+SuperGenPass Chrome Session
 
 ----------
 
@@ -13,16 +13,14 @@ Stores multiple SuperGenPass style master passwords for a chrome session.
 
 ----------
 
-This extension stores multiple SuperGenPass style master passwords for a chrome session. It performs almost all of the original SGP bookmarklet functionalities, in a secure way.
+This extension stores multiple SuperGenPass style master passwords for a chrome session. It can perform all important functions of the original SGP bookmarklet, in a secure way.
 
 2.0 - 20100316
-
-- The domain part used in each tab is shown, and can be edited for the session
-- Minimal options page: Allows blocking or unblocking a domain, or all, from auto-filling the password on page load
-- Shows the last used password for each tab
+- View and edit the domain part used in each tab.
+- Minimal options page: Block or unblock a domain, or all, from auto-filling the password on page load.
+- Last used password for each tab is highlighted.
 
 1.2 - 20091228
-
-- Stores multiple passwords for a domain (0 is default, but you can apply any latter) - 
+- Store multiple passwords for a domain (0 is the default, but you can apply any latter).
 
 ----------
