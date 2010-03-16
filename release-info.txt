@@ -1,0 +1,24 @@
+----------
+
+Version 1.2 - Monday, December 28, 2009
+svramu
+
+----------
+
+SuperGenPass Chrome Session 
+
+----------
+
+Stores multiple SuperGenPass style master passwords for a chrome session.
+
+----------
+
+This extension stores multiple SuperGenPass style master passwords for a chrome session. It does most of the original SGP bookmarklet functionalities, in a secure way.
+
+1.2.0 - 20091228
+Stores multiple passwords (0 is default, but you can apply any latter)
+
+1.1.1 - 20091128
+Initial release
+
+----------
