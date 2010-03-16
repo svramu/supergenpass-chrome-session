@@ -2,6 +2,7 @@
   <head>
     <title>SuperGenPass Chrome Session Options</title>
     <script type="text/javascript">
+      var bg = chrome.extension.getBackgroundPage();
 
       // Saves options to localStorage.
       function save_options() {
@@ -18,6 +19,7 @@
             blacklist[domains[i]] = true;
         }
         localStorage["domain_blacklist"] = JSON.stringify(blacklist);
+        bg.loadBlacklist();
 
         // Update status to let user know options were saved.
         var status = document.getElementById("status");
