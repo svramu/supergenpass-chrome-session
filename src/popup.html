@@ -108,6 +108,8 @@
       }
 
       function show() {
+        var pass = $('pass').value;
+        if(pass.length==0) return;
         if($('pass').value.length==0) return;
         chrome.tabs.getSelected(null, function(tab) {
           bg.alertbg(bg.generate(pass, tab.url));
